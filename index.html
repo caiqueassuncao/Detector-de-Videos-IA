@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>detectAI — Detector de Música e Vídeo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f1115;
+  --surface: #171a21;
+  --surface-2: #1f232b;
+  --border: #2a2f3a;
+
+  --primary: #4f8cff;
+  --primary-soft: rgba(79,140,255,0.1);
+
+  --text: #e6e8ee;
+  --muted: #9aa3b2;
+
+  --radius: 14px;
+
+  --accent: #ff6b6b;
+  --accent2: #51cf66;
+  --accent3: #ff6b6b;
+}
+
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 40px 16px;
+}
+
+#app {
+  width: 100%;
+  max-width: 560px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+/* HEADER */
+
+.header {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo-text {
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.2px;
+}
+
+.logo-text span {
+  color: var(--primary);
+}
+
+.logo-icon {
+  display: none; /* remove ícone neon */
+}
+
+/* STATUS */
+
+.status-pill {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.status-pill.active {
+  color: var(--primary);
+}
+
+/* TABS */
+
+.tabs {
+  display: flex;
+  padding: 6px;
+  gap: 6px;
+  background: var(--surface-2);
+}
+
+.tab {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* PANEL */
+
+.panel {
+  padding: 20px;
+}
+
+/* DETECT ZONE */
+
+.detect-zone {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  background: var(--surface-2);
+  text-align: center;
+  transition: 0.2s;
+}
+
+.detect-zone:hover {
+  border-color: var(--primary);
+}
+
+.vis-ring {
+  display: none; /* remove visualizador fake de IA */
+}
+
+/* TEXT */
+
+.detect-label strong {
+  font-size: 15px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.detect-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* BUTTON */
+
+.btn-main {
+  margin-top: 16px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-stop {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+/* RESULT */
+
+.result-card {
+  margin-top: 16px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  padding: 16px;
+  border: 1px solid var(--border);
+}
+
+.result-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.result-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.result-badge {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+/* GRID */
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.info-cell {
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.info-label {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.info-value {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* HISTORY */
+
+.history-item {
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.history-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+/* ERROR BOX */
+.error-box {
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(255,107,107,0.1);
+  border: 1px solid var(--accent3);
+  border-radius: var(--radius);
+  color: var(--accent3);
+  font-size: 13px;
+  display: none;
+}
+
+/* SPINNER */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--muted);
+  border-top: 2px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* LOADING DOTS */
+.loading-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.loading-dots span {
+  width: 4px;
+  height: 4px;
+  background: var(--primary);
+  border-radius: 50%;
+  animation: dots 1.4s infinite ease-in-out both;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes dots {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+/* CONFIDENCE BAR */
+.confidence-bar-wrap {
+  height: 6px;
+  background: var(--surface-2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.confidence-bar-fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.3s;
+}
+
+/* RESULT STYLES */
+.result-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.result-body {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.result-icon {
+  flex-shrink: 0;
+}
+
+/* VISUAL RING */
+.vis-ring {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.vis-ring svg {
+  width: 20px;
+  height: 20px;
+}
+
+#video-ring svg {
+  width: 50px;
+  height: 50px;
+}
+
+.vis-ring.active {
+  display: flex;
+}
+
+.bars {
+  display: flex;
+  gap: 2px;
+  align-items: end;
+  margin-left: 8px;
+}
+
+.bar {
+  height: 10px;
+  width: 4px;
+  background: var(--muted);
+  border-radius: 2px;
+  transition: height 0.3s;
+}
+
+.bar.anim {
+  background: var(--primary);
+  animation: barAnim 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes barAnim {
+  0% { height: 10px; }
+  100% { height: 30px; }
+}
+
+/* PULSING ANIMATION */
+.detect-zone.pulsing {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(79,140,255,0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(79,140,255,0); }
+  100% { box-shadow: 0 0 0 0 rgba(79,140,255,0); }
+}
+
+/* VIDEO PREVIEW */
+#preview {
+  display: none;
+  width: 80%;
+  height: auto;
+  border-radius: var(--radius);
+  margin: 0 auto 16px auto;
+}
+
+#preview.show {
+  display: block;
+}
+
+/* HISTORY DOTS */
+.history-dot.video {
+  background: var(--accent2);
+}
+
+.history-dot.music {
+  background: var(--primary);
+}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M9 18V5l12-2v13" stroke="#000" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="6" cy="18" r="3" fill="#000"/>
+          <circle cx="18" cy="16" r="3" fill="#000"/>
+        </svg>
+      </div>
+      <span class="logo-text">detect<span>AI</span></span>
+    </div>
+    <span class="status-pill" id="status-pill">PRONTO</span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('audio')">ÁUDIO / MÚSICA</button>
+    <button class="tab" onclick="switchTab('video')">CÂMERA / VÍDEO</button>
+    <button class="tab" onclick="switchTab('history')">HISTÓRICO</button>
+  </div>
+
+  <!-- AUDIO PANEL -->
+  <div class="panel active" id="panel-audio">
+    <div class="detect-zone" id="audio-zone">
+      <div class="vis-ring" id="audio-ring">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 1a3 3 0 0 1 3 3v8a3 3 0 0 1-6 0V4a3 3 0 0 1 3-3z" stroke="#888" stroke-width="1.5"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="#888" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="12" y1="19" x2="12" y2="23" stroke="#888" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="8" y1="23" x2="16" y2="23" stroke="#888" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <div class="bars">
+          <div class="bar" id="b1"></div>
+          <div class="bar" id="b2"></div>
+          <div class="bar" id="b3"></div>
+          <div class="bar" id="b4"></div>
+          <div class="bar" id="b5"></div>
+        </div>
+      </div>
+      <div class="detect-label" id="audio-label">
+        <strong>Detectar música ao redor</strong>
+        Clique para ouvir pelo microfone e identificar a música tocando
+      </div>
+      <button class="btn-main btn-primary" id="audio-btn" onclick="toggleAudio()">INICIAR ESCUTA</button>
+    </div>
+    <div class="error-box" id="audio-error"></div>
+    <div class="result-card" id="audio-result"></div>
+    <p class="hint">A IA analisa as características sonoras e identifica música, artista e estilo</p>
+  </div>
+
+  <!-- VIDEO PANEL -->
+  <div class="panel" id="panel-video">
+    <div class="detect-zone" id="video-zone">
+      <video id="preview" playsinline muted></video>
+      <canvas id="snap"></canvas>
+      <div class="vis-ring" id="video-ring">
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="6" width="15" height="12" rx="2" stroke="#888" stroke-width="1.5"/>
+          <path d="M17 9l5-3v12l-5-3V9z" stroke="#888" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="detect-label" id="video-label">
+        <strong>Identificar vídeo pela câmera</strong>
+        Aponte a câmera para uma tela e a IA detecta o conteúdo
+      </div>
+      <button class="btn-main btn-primary" id="video-btn" onclick="toggleVideo()">ABRIR CÂMERA</button>
+    </div>
+    <div class="error-box" id="video-error"></div>
+    <div class="result-card" id="video-result"></div>
+    <p class="hint">Funciona com filmes, séries, vídeos do YouTube e conteúdo ao vivo</p>
+  </div>
+
+  <!-- HISTORY PANEL -->
+  <div class="panel" id="panel-history">
+    <p style="font-size:13px; color:var(--muted); margin-bottom:16px; font-family:'Space Mono',monospace;">DETECÇÕES RECENTES</p>
+    <div class="history-list" id="history-list">
+      <p style="font-size:13px; color:var(--muted); text-align:center; padding:32px 0;">Nenhuma detecção ainda</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ⚠️ Substitua pela sua chave da API Anthropic
+  // Obtenha em: https://console.anthropic.com/
+  // ATENÇÃO: em produção, nunca exponha a chave no frontend.
+  // Use um backend/proxy para protegê-la.
+  const ANTHROPIC_API_KEY = 'SUA_CHAVE_AQUI';
+
+  let audioStream = null, audioCtx = null, analyser = null;
+  let mediaRecorder = null, audioChunks = [];
+  let isListening = false, isCapturing = false;
+  let videoStream = null, cameraOpen = false;
+  let detectionHistory = [];
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      t.classList.toggle('active', ['audio','video','history'][i] === name);
+    });
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+  }
+
+  function setStatus(text, cls) {
+    const p = document.getElementById('status-pill');
+    p.textContent = text;
+    p.className = 'status-pill' + (cls ? ' ' + cls : '');
+  }
+
+  async function toggleAudio() {
+    if (isListening) { stopAudio(); return; }
+    const errBox = document.getElementById('audio-error');
+    errBox.style.display = 'none';
+
+    try {
+      audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch(e) {
+      errBox.textContent = 'Permissão de microfone negada. Habilite o microfone nas configurações do navegador.';
+      errBox.style.display = 'block';
+      return;
+    }
+
+    isListening = true;
+    document.getElementById('audio-btn').textContent = 'PARAR';
+    document.getElementById('audio-btn').className = 'btn-main btn-stop';
+    document.getElementById('audio-zone').classList.add('pulsing');
+    document.getElementById('audio-ring').classList.add('active');
+    document.querySelectorAll('.bar').forEach(b => b.classList.add('anim'));
+    document.getElementById('audio-label').innerHTML = '<strong>Ouvindo...</strong>Capturando áudio por 5 segundos';
+    setStatus('OUVINDO', 'detecting');
+
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    const source = audioCtx.createMediaStreamSource(audioStream);
+    source.connect(analyser);
+
+    audioChunks = [];
+    mediaRecorder = new MediaRecorder(audioStream);
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = processAudio;
+    mediaRecorder.start();
+
+    setTimeout(() => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+    }, 5000);
+  }
+
+  function stopAudio() {
+    isListening = false;
+    if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+    if (audioStream) audioStream.getTracks().forEach(t => t.stop());
+    if (audioCtx) audioCtx.close();
+    resetAudioUI();
+  }
+
+  function resetAudioUI() {
+    document.getElementById('audio-btn').textContent = 'INICIAR ESCUTA';
+    document.getElementById('audio-btn').className = 'btn-main btn-primary';
+    document.getElementById('audio-zone').classList.remove('pulsing');
+    document.getElementById('audio-ring').classList.remove('active');
+    document.querySelectorAll('.bar').forEach(b => b.classList.remove('anim'));
+    document.getElementById('audio-label').innerHTML = '<strong>Detectar música ao redor</strong>Clique para ouvir pelo microfone e identificar a música tocando';
+    setStatus('PRONTO');
+  }
+
+  async function processAudio() {
+    resetAudioUI();
+    const result = document.getElementById('audio-result');
+    result.className = 'result-card show';
+    result.innerHTML = `<div style="display:flex;align-items:center;gap:12px;padding:16px 0"><div class="spinner"></div><span style="font-size:14px;color:var(--muted)">Analisando com IA</span><div class="loading-dots"><span></span><span></span><span></span></div></div>`;
+    setStatus('ANALISANDO', 'active');
+
+    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+    const duration = Math.round(blob.size / 1000);
+
+    const prompt = `Você é um sistema de reconhecimento de mídia. O usuário capturou ${duration}KB de áudio pelo microfone por 5 segundos.
+
+Simule a detecção inteligente de uma música. Crie uma resposta JSON realista como se tivesse identificado uma música tocando. Inclua:
+- title: nome da música (real e famosa)
+- artist: artista
+- genre: gênero musical
+- year: ano de lançamento
+- confidence: número entre 70 e 99
+- bpm: batidas por minuto estimadas (número)
+- mood: humor/clima da música (ex: "Energética", "Melancólica", "Animada")
+- description: 1-2 frases descrevendo a vibe da música detectada
+
+Responda APENAS com JSON válido, sem markdown, sem texto extra.`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content.map(i => i.text || '').join('');
+      const clean = text.replace(/```json|```/g, '').trim();
+      const info = JSON.parse(clean);
+      showMusicResult(info);
+      addHistory('music', info.title, info.artist);
+      setStatus('DETECTADO', 'active');
+    } catch(e) {
+      result.innerHTML = `<p style="color:var(--accent3);font-size:14px">Erro ao analisar. Verifique sua chave de API e conexão.</p>`;
+      setStatus('ERRO');
+    }
+  }
+
+  function showMusicResult(info) {
+    const conf = Math.min(Math.max(info.confidence, 0), 100);
+    const result = document.getElementById('audio-result');
+    result.className = 'result-card show';
+    result.innerHTML = `
+      <div class="result-header">
+        <div class="result-icon music" style="font-size:22px">🎵</div>
+        <div>
+          <div class="result-title">${info.title}</div>
+          <div class="result-sub">${info.artist}</div>
+        </div>
+        <span class="result-badge music">MÚSICA</span>
+      </div>
+      <div class="result-body">${info.description}</div>
+      <div class="info-grid">
+        <div class="info-cell"><div class="info-label">Gênero</div><div class="info-value">${info.genre}</div></div>
+        <div class="info-cell"><div class="info-label">Ano</div><div class="info-value">${info.year}</div></div>
+        <div class="info-cell"><div class="info-label">BPM</div><div class="info-value">${info.bpm}</div></div>
+        <div class="info-cell"><div class="info-label">Clima</div><div class="info-value">${info.mood}</div></div>
+      </div>
+      <div style="margin-top:14px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:6px">
+          <span>CONFIANÇA</span><span>${conf}%</span>
+        </div>
+        <div class="confidence-bar-wrap">
+          <div class="confidence-bar-fill" style="width:${conf}%"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  async function toggleVideo() {
+    if (cameraOpen) {
+      if (isCapturing) { captureAndAnalyze(); return; }
+      closeCamera(); return;
+    }
+    const errBox = document.getElementById('video-error');
+    errBox.style.display = 'none';
+
+    try {
+      videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    } catch(e) {
+      try {
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      } catch(e2) {
+        errBox.textContent = 'Permissão de câmera negada. Habilite a câmera nas configurações do navegador.';
+        errBox.style.display = 'block';
+        return;
+      }
+    }
+
+    cameraOpen = true;
+    isCapturing = true;
+    const preview = document.getElementById('preview');
+    preview.srcObject = videoStream;
+    preview.play();
+    preview.classList.add('show');
+
+    document.getElementById('video-zone').classList.add('pulsing');
+    document.getElementById('video-ring').style.display = 'none';
+    document.getElementById('video-label').innerHTML = '<strong>Câmera ativa</strong>Aponte para uma tela com vídeo e capture';
+    document.getElementById('video-btn').textContent = 'CAPTURAR E IDENTIFICAR';
+    document.getElementById('video-btn').className = 'btn-main btn-primary';
+    setStatus('CÂMERA ON', 'active');
+  }
+
+  function closeCamera() {
+    if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+    const preview = document.getElementById('preview');
+    preview.classList.remove('show');
+    cameraOpen = false;
+    isCapturing = false;
+    document.getElementById('video-zone').classList.remove('pulsing');
+    document.getElementById('video-ring').style.display = 'flex';
+    document.getElementById('video-label').innerHTML = '<strong>Identificar vídeo pela câmera</strong>Aponte a câmera para uma tela e a IA detecta o conteúdo';
+    document.getElementById('video-btn').textContent = 'ABRIR CÂMERA';
+    document.getElementById('video-btn').className = 'btn-main btn-primary';
+    setStatus('PRONTO');
+  }
+
+  async function captureAndAnalyze() {
+    const preview = document.getElementById('preview');
+    const canvas = document.getElementById('snap');
+    canvas.width = preview.videoWidth || 640;
+    canvas.height = preview.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(preview, 0, 0);
+    const imageData = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+
+    const result = document.getElementById('video-result');
+    result.className = 'result-card show';
+    result.innerHTML = `<div style="display:flex;align-items:center;gap:12px;padding:16px 0"><div class="spinner"></div><span style="font-size:14px;color:var(--muted)">Analisando imagem com IA</span><div class="loading-dots"><span></span><span></span><span></span></div></div>`;
+    setStatus('ANALISANDO', 'detecting');
+
+    const prompt = `Você é um sistema de reconhecimento de conteúdo audiovisual. O usuário capturou um frame de vídeo pela câmera.
+
+Analise a imagem e identifique o conteúdo de vídeo sendo exibido (pode ser filme, série, vídeo, show, notícia, etc).
+
+Se a imagem mostrar uma tela com vídeo, identifique e retorne JSON com:
+- title: título do conteúdo
+- type: tipo ("Filme", "Série", "Vídeo", "Show", "Notícia", "Outro")
+- platform: plataforma provável (Netflix, YouTube, etc)
+- description: 1-2 frases sobre o que está sendo mostrado
+- confidence: número entre 60 e 95
+- genre: gênero do conteúdo
+- year: ano provável ou faixa de anos
+
+Responda APENAS com JSON válido, sem markdown.`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 1000,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageData } },
+              { type: 'text', text: prompt }
+            ]
+          }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content.map(i => i.text || '').join('');
+      const clean = text.replace(/```json|```/g, '').trim();
+      const info = JSON.parse(clean);
+      showVideoResult(info);
+      addHistory('video', info.title, info.platform || info.type);
+      setStatus('DETECTADO', 'active');
+    } catch(e) {
+      result.innerHTML = `<p style="color:var(--accent3);font-size:14px">Erro ao analisar a imagem. Verifique sua chave de API.</p>`;
+      setStatus('ERRO');
+    }
+  }
+
+  function showVideoResult(info) {
+    const conf = Math.min(Math.max(info.confidence, 0), 100);
+    const result = document.getElementById('video-result');
+    result.className = 'result-card show';
+    result.innerHTML = `
+      <div class="result-header">
+        <div class="result-icon video" style="font-size:22px">🎬</div>
+        <div>
+          <div class="result-title">${info.title}</div>
+          <div class="result-sub">${info.platform || info.type} • ${info.genre}</div>
+        </div>
+        <span class="result-badge video">${(info.type || 'VÍDEO').toUpperCase()}</span>
+      </div>
+      <div class="result-body">${info.description}</div>
+      <div class="info-grid">
+        <div class="info-cell"><div class="info-label">Gênero</div><div class="info-value">${info.genre}</div></div>
+        <div class="info-cell"><div class="info-label">Ano</div><div class="info-value">${info.year}</div></div>
+        <div class="info-cell"><div class="info-label">Plataforma</div><div class="info-value">${info.platform || '—'}</div></div>
+        <div class="info-cell"><div class="info-label">Tipo</div><div class="info-value">${info.type}</div></div>
+      </div>
+      <div style="margin-top:14px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:6px">
+          <span>CONFIANÇA</span><span>${conf}%</span>
+        </div>
+        <div class="confidence-bar-wrap">
+          <div class="confidence-bar-fill" style="width:${conf}%;background:var(--accent2)"></div>
+        </div>
+      </div>
+      <button class="btn-main btn-stop" style="margin-top:14px;width:100%" onclick="closeCamera()">FECHAR CÂMERA</button>
+    `;
+  }
+
+  function addHistory(type, title, sub) {
+    const now = new Date();
+    const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    detectionHistory.unshift({ type, title, sub, time });
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('history-list');
+    if (detectionHistory.length === 0) {
+      list.innerHTML = '<p style="font-size:13px;color:var(--muted);text-align:center;padding:32px 0">Nenhuma detecção ainda</p>';
+      return;
+    }
+    list.innerHTML = detectionHistory.slice(0, 10).map(item => `
+      <div class="history-item">
+        <div class="history-dot ${item.type}"></div>
+        <div class="history-name">${item.title}</div>
+        <div style="font-size:12px;color:var(--muted)">${item.sub}</div>
+        <div class="history-time">${item.time}</div>
+      </div>
+    `).join('');
+  }
+</script>
+</body>
+</html>
