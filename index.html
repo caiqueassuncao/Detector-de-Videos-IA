@@ -428,6 +428,7 @@ body {
   <div class="tabs">
     <button class="tab active" onclick="switchTab('audio')">ÁUDIO / MÚSICA</button>
     <button class="tab" onclick="switchTab('video')">CÂMERA / VÍDEO</button>
+    <button class="tab" onclick="switchTab('detector')">DETECTOR IA</button>
     <button class="tab" onclick="switchTab('history')">HISTÓRICO</button>
   </div>
 
@@ -489,14 +490,27 @@ body {
       <p style="font-size:13px; color:var(--muted); text-align:center; padding:32px 0;">Nenhuma detecção ainda</p>
     </div>
   </div>
+
+  <!-- DETECTOR IA PANEL -->
+  <div class="panel" id="panel-detector">
+    <div class="detect-zone" style="background:var(--surface);border-color:var(--border);">
+      <div class="detect-label"><strong>Detectar se texto foi gerado por IA</strong>Cole ou escreva um texto abaixo.</div>
+      <textarea id="detector-text" style="width:100%;height:110px;margin-top:12px;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text)"></textarea>
+      <button class="btn-main btn-primary" style="margin-top:12px" onclick="runOpenAIDetection()">ANALISAR TEXTO COM OPENAI</button>
+    </div>
+    <div class="result-card" id="detector-result" style="margin-top:16px;display:none;"></div>
+  </div>
 </div>
 
 <script>
-  // ⚠️ Substitua pela sua chave da API Anthropic
-  // Obtenha em: https://console.anthropic.com/
+  // ⚠️ Substitua pelas suas chaves de API
+  // Obtenha as chaves em:
+  // - Anthropic: https://console.anthropic.com/
+  // - OpenAI: https://platform.openai.com/account/api-keys
   // ATENÇÃO: em produção, nunca exponha a chave no frontend.
   // Use um backend/proxy para protegê-la.
-  const ANTHROPIC_API_KEY = 'SUA_CHAVE_AQUI';
+  const ANTHROPIC_API_KEY = 'SUA_CHAVE_ANTHROPIC_AQUI';
+  const OPENAI_API_KEY = 'SUA_CHAVE_OPENAI_AQUI';
 
   let audioStream = null, audioCtx = null, analyser = null;
   let mediaRecorder = null, audioChunks = [];
@@ -608,7 +622,7 @@ Responda APENAS com JSON válido, sem markdown, sem texto extra.`;
           'anthropic-dangerous-direct-browser-access': 'true'
         },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-3-5-sonnet-20240620',
           max_tokens: 1000,
           messages: [{ role: 'user', content: prompt }]
         })
@@ -745,7 +759,7 @@ Responda APENAS com JSON válido, sem markdown.`;
           'anthropic-dangerous-direct-browser-access': 'true'
         },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-3-5-sonnet-20240620',
           max_tokens: 1000,
           messages: [{
             role: 'user',
@@ -822,6 +836,57 @@ Responda APENAS com JSON válido, sem markdown.`;
         <div class="history-time">${item.time}</div>
       </div>
     `).join('');
+  }
+
+  async function detectAITextOpenAI(text) {
+    const res = await fetch('/api/detect-openai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error('Erro no backend: ' + (err?.error || res.status));
+    }
+    const data = await res.json();
+    if (!('ai_score' in data) || !('human_score' in data)) {
+      throw new Error('Resposta inválida do backend OpenAI');
+    }
+    return data;
+  }
+
+  async function runOpenAIDetection() {
+    const resultBox = document.getElementById('detector-result');
+    const text = document.getElementById('detector-text').value.trim();
+    if (!text) {
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = '<p style="color:var(--accent3);">Digite um texto para análise.</p>';
+      return;
+    }
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<div style="display:flex;align-items:center;gap:12px;padding:16px 0"><div class="spinner"></div><span style="font-size:14px;color:var(--muted)">Analisando com OpenAI...</span></div>';
+
+    try {
+      const info = await detectAITextOpenAI(text);
+      const ai = Math.min(Math.max(Number(info.ai_score) || 0, 0), 100);
+      const human = Math.min(Math.max(Number(info.human_score) || 0, 0), 100);
+      const reason = info.reason || 'Sem explicação.';
+
+      resultBox.innerHTML = `
+        <div class="result-header">
+          <div class="result-icon" style="font-size:22px">🤖</div>
+          <div>
+            <div class="result-title">Detecção OpenAI</div>
+            <div class="result-sub">IA: ${ai}% | Humano: ${human}%</div>
+          </div>
+          <span class="result-badge">IA DETECTOR</span>
+        </div>
+        <div class="result-body">${reason}</div>
+      `;
+      addHistory('video', 'OpenAI Texto', `IA ${ai}% - Humano ${human}%`);
+    } catch (err) {
+      resultBox.innerHTML = `<p style="color:var(--accent3);font-size:14px">Erro: ${err.message}</p>`;
+    }
   }
 </script>
 </body>
